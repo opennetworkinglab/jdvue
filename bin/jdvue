@@ -8,12 +8,12 @@
 
 JDVUE_ROOT=${JDVUE_ROOT:-$(dirname $0)/..}
 cd $JDVUE_ROOT
-VER=1.7.0-SNAPSHOT
+VER=2.0
 JAR=$PWD/target/jdvue-${VER}.jar # start with the dev jar first
 cd - >/dev/null
 
 # If the dev jar is not available, use one from .m2/repository
-[ -f ${JAR} ] || JAR=~/.m2/repository/org/onlab/tools/jdvue/${VER}/jdvue-${VER}.jar
+[ -f ${JAR} ] || JAR=~/.m2/repository/org/onosproject/jdvue/${VER}/jdvue-${VER}.jar
 
 # Assume default project to be the base-name of the argument or of current dir
 name=$(basename ${1:-$PWD})

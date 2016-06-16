@@ -123,7 +123,7 @@
             </tr>
         </table>
         <div><hr size="1"></div>
-        <div><input type="checkbox"> Highlight cycles</input></div>
+        <div><input type="checkbox" checked> Highlight cycles</input></div>
         <div><input style="width: 95%" type="range" min="0" max="100" value="75"></div>
     </div>
     <div class="details">
@@ -184,7 +184,7 @@
 
     var link = svg.append("g").selectAll(".link"),
             node = svg.append("g").selectAll(".node"),
-            cycles = {}, highlightCycles, selectedNode;
+            cycles = {}, highlightCycles = true, selectedNode;
 
     function isCyclicLink(l) {
         return highlightCycles &&
