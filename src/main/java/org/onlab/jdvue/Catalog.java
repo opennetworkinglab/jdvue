@@ -43,6 +43,7 @@ public class Catalog {
     private static final String IMPORT = "import";
     private static final String STATIC = "static";
     private static final String SRC_ROOT = "src/main/java/";
+    private static final String TST_ROOT = "src/test/java/";
     private static final String WILDCARD = "\\.*$";
 
     private final Map<String, JavaSource> sources = new HashMap<>();
@@ -276,7 +277,8 @@ public class Catalog {
      */
     private String nameFromPath(String path) {
         int i = path.indexOf(SRC_ROOT);
-        String name = i < 0 ? path : path.substring(i + SRC_ROOT.length());
+        int j = path.indexOf(TST_ROOT);
+        String name = i < 0 ? (j < 0 ? path : path.substring(j + TST_ROOT.length())) : path.substring(i + SRC_ROOT.length());
         return name.replaceAll("\\.java$", "").replace("/", ".");
     }
 
