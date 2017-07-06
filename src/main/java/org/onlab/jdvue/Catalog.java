@@ -127,18 +127,10 @@ public class Catalog {
      */
     private void recordCycleForPackages(DependencyCycle cycle) {
         for (JavaPackage javaPackage : cycle.getCycle()) {
-            Set<DependencyCycle> cset = packageCycles.get(javaPackage);
-            if (cset == null) {
-                cset = new HashSet<>();
-                packageCycles.put(javaPackage, cset);
-            }
+            Set<DependencyCycle> cset = packageCycles.computeIfAbsent(javaPackage, k -> new HashSet<>());
             cset.add(cycle);
 
-            Set<Dependency> sset = packageCycleSegments.get(javaPackage);
-            if (sset == null) {
-                sset = new HashSet<>();
-                packageCycleSegments.put(javaPackage, sset);
-            }
+            Set<Dependency> sset = packageCycleSegments.computeIfAbsent(javaPackage, k -> new HashSet<>());
             sset.addAll(cycle.getCycleSegments());
         }
     }
@@ -151,8 +143,7 @@ public class Catalog {
      */
     private void findCircularDependencies(JavaPackage javaPackage) {
         // Setup a depth trace anchored at the given java package.
-        List<JavaPackage> trace = newTrace(new ArrayList<JavaPackage>(), javaPackage);
-
+        List<JavaPackage> trace = newTrace(new ArrayList<>(), javaPackage);
         Set<JavaPackage> searched = new HashSet<>();
         searchDependencies(javaPackage, trace, searched);
     }
@@ -185,10 +176,12 @@ public class Catalog {
         if (!searched.contains(javaPackage)) {
             searched.add(javaPackage);
             for (JavaPackage dependency : javaPackage.getDependencies()) {
-                if (trace.contains(dependency)) {
-                    cycles.add(new DependencyCycle(trace, dependency));
-                } else {
-                    searchDependencies(dependency, newTrace(trace, dependency), searched);
+                if (dependency != null) {
+                    if (trace.contains(dependency)) {
+                        cycles.add(new DependencyCycle(trace, dependency));
+                    } else {
+                        searchDependencies(dependency, newTrace(trace, dependency), searched);
+                    }
                 }
             }
         }
@@ -220,8 +213,11 @@ public class Catalog {
     private Set<JavaPackage> importedPackages(Set<JavaEntity> imports) {
         Set<JavaPackage> packages = new HashSet<>();
         for (JavaEntity entity : imports) {
-            packages.add(entity instanceof JavaPackage ? (JavaPackage) entity :
-                                 ((JavaSource) entity).getPackage());
+            JavaPackage e = entity instanceof JavaPackage ? (JavaPackage) entity :
+                    ((JavaSource) entity).getPackage();
+            if (e != null) {
+                packages.add(e);
+            }
         }
         return packages;
     }
@@ -253,12 +249,7 @@ public class Catalog {
      * @return Java package
      */
     private JavaPackage getOrCreatePackage(String packageName) {
-        JavaPackage javaPackage = packages.get(packageName);
-        if (javaPackage == null) {
-            javaPackage = new JavaPackage(packageName);
-            packages.put(packageName, javaPackage);
-        }
-        return javaPackage;
+        return packages.computeIfAbsent(packageName, JavaPackage::new);
     }
 
     /**
@@ -269,12 +260,7 @@ public class Catalog {
      */
     private JavaSource getOrCreateSource(String path) {
         String name = nameFromPath(path);
-        JavaSource source = sources.get(name);
-        if (source == null) {
-            source = new JavaSource(name, path);
-            sources.put(name, source);
-        }
-        return source;
+        return sources.computeIfAbsent(name, n -> new JavaSource(n, path));
     }
 
     /**

@@ -15,6 +15,8 @@
  */
 package org.onlab.jdvue;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -68,7 +70,7 @@ public class JavaPackage extends JavaEntity {
      * @return set of Java package dependencies
      */
     Set<JavaPackage> getDependencies() {
-        return dependencies;
+        return dependencies != null ? dependencies : ImmutableSet.of();
     }
 
     /**
