@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
@@ -42,10 +44,12 @@ public class Catalog {
     private static final String PACKAGE = "package";
     private static final String IMPORT = "import";
     private static final String STATIC = "static";
-    private static final String SRC_ROOT = "src/main/java/";
-    private static final String TST_ROOT = "src/test/java/";
     private static final String WILDCARD = "\\.*$";
 
+    private static final String RE_PATH_SANS_JAVA = "^(\\S+)(/\\S+\\.java)";
+    private static final Pattern PATH_SANS_JAVA = Pattern.compile(RE_PATH_SANS_JAVA);
+
+    private final Map<String, String> packagePaths = new HashMap<>();
     private final Map<String, JavaSource> sources = new HashMap<>();
     private final Map<String, JavaPackage> packages = new HashMap<>();
     private final Set<DependencyCycle> cycles = new HashSet<>();
@@ -66,14 +70,19 @@ public class Catalog {
         String line;
         while ((line = br.readLine()) != null) {
             // Split the line into the two fields: path and pragmas
-            String fields[] = line.trim().split(":");
+            String[] fields = line.trim().split(":");
             if (fields.length <= 1) {
                 continue;
             }
             String path = fields[0];
 
             // Now split the pragmas on whitespace and trim punctuation
-            String pragma[] = fields[1].trim().replaceAll("[;\n\r]", "").split("[\t ]");
+            String[] pragma = fields[1].trim().replaceAll("[;\n\r]", "").split("[\t ]");
+
+            // Ensure we have full-package-path to package-path lookups populated
+            if (pragma[0].equals(PACKAGE)) {
+                addPackagePath(path, pragma[1]);
+            }
 
             // Locate (or create) Java source entity based on the path
             JavaSource source = getOrCreateSource(path);
@@ -90,6 +99,18 @@ public class Catalog {
                 }
             }
         }
+    }
+
+    // strips off trailing "/xxxxxxxxxx.java" if there is one
+    private String javaSuffixRemoved(String s) {
+        Matcher m = PATH_SANS_JAVA.matcher(s);
+        return m.matches() ? m.group(1) : s;
+    }
+
+    // adds lookup from full-package-path to package-name
+    private void addPackagePath(String path, String pkgName) {
+        String pkgPath = javaSuffixRemoved(path);
+        packagePaths.put(pkgPath, pkgName);
     }
 
     /**
@@ -267,19 +288,22 @@ public class Catalog {
     /**
      * Extracts a fully qualified source class name from the given path.
      * <p>
-     * For now, this implementation assumes standard Maven source structure
-     * and thus will look for start of package name under 'src/main/java/'.
-     * If it will not find such a prefix, it will simply return the path as
+     * Uses the package-path mappings to suppress the unwanted path prefix.
+     * If no matching mapping is found, it will simply return the path as
      * the name.
      *
      * @param path source path
      * @return source name
      */
     private String nameFromPath(String path) {
-        int i = path.indexOf(SRC_ROOT);
-        int j = path.indexOf(TST_ROOT);
-        String name = i < 0 ? (j < 0 ? path : path.substring(j + TST_ROOT.length())) : path.substring(i + SRC_ROOT.length());
-        return name.replaceAll("\\.java$", "").replace("/", ".");
+        String pkgPath = javaSuffixRemoved(path);
+        String pkgName = packagePaths.computeIfAbsent(pkgPath, p -> p);
+        int ri = path.lastIndexOf("/");
+        if (ri >= 0) {
+            String srcName = path.substring(ri + 1).replaceAll("\\.java$", "");
+            return pkgName + "." + srcName;
+        }
+        return path;
     }
 
     /**
@@ -358,7 +382,7 @@ public class Catalog {
      */
     public Set<DependencyCycle> getPackageCycles(JavaPackage javaPackage) {
         Set<DependencyCycle> set = packageCycles.get(javaPackage);
-        return Collections.unmodifiableSet(set == null ? new HashSet<DependencyCycle>() : set);
+        return Collections.unmodifiableSet(set == null ? new HashSet<>() : set);
     }
 
     /**
@@ -369,7 +393,7 @@ public class Catalog {
      */
     public Set<Dependency> getPackageCycleSegments(JavaPackage javaPackage) {
         Set<Dependency> set = packageCycleSegments.get(javaPackage);
-        return Collections.unmodifiableSet(set == null ? new HashSet<Dependency>() : set);
+        return Collections.unmodifiableSet(set == null ? new HashSet<>() : set);
     }
 
     /**

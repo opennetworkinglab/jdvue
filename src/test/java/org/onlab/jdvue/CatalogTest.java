@@ -16,9 +16,6 @@
 package org.onlab.jdvue;
 
 import org.junit.Test;
-import org.onlab.jdvue.Catalog;
-import org.onlab.jdvue.JavaPackage;
-import org.onlab.jdvue.JavaSource;
 
 import java.io.IOException;
 
@@ -55,4 +52,26 @@ public class CatalogTest {
         assertEquals("incorrect cycle count", 5, cat.getCycles().size());
     }
 
+    @Test
+    public void nonMavenCat() throws IOException {
+        Catalog cat = new Catalog();
+        cat.load("src/test/resources/non_maven_cat.db");
+        cat.analyze();
+
+        assertEquals("incorrect package count", 3, cat.getPackages().size());
+        assertEquals("incorrect source count", 8, cat.getSources().size());
+
+        JavaPackage pkg = cat.getPackage("com.foobar.model");
+        assertNotNull("package should be found", pkg);
+
+        JavaSource src = cat.getSource("com.foobar.model.MagicBean");
+        assertNotNull("source should be found", src);
+
+        assertEquals("incorrect package source count", 3, pkg.getSources().size());
+        assertEquals("incorrect package dependency count", 1, pkg.getDependencies().size());
+        assertEquals("incorrect package cycle count", 1, cat.getPackageCycles(pkg).size());
+
+        assertEquals("incorrect segment count", 3, cat.getCycleSegments().size());
+        assertEquals("incorrect cycle count", 1, cat.getCycles().size());
+    }
 }
