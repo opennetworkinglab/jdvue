@@ -23,6 +23,5 @@
 ./PyTest/foobardir/nonstandard/test/unit/src/com/foobar/view/BeanViewerTest.java:package com.foobar.view;
 ./PyTest/foobardir/nonstandard/test/unit/src/com/foobar/view/BeanViewerTest.java:import java.util.List;
 ./PyTest/foobardir/nonstandard/test/unit/src/com/foobar/view/BeanViewerTest.java:import junit.framework.TestCase;
-./PyTest/foobardir/nonstandard/test/unit/src/com/foobar/view/BeanViewerTest.java:import static com.foobar.util.MathUtils.neato;
 ./PyTest/foobardir/nonstandard/test/unit/src/com/foobar/view/BeanViewerTest.java:import com.foobar.model.MagicBean;
 ./PyTest/foobardir/nonstandard/test/unit/src/com/foobar/view/BeanViewerTest.java:import com.foobar.model.PlantPot;
