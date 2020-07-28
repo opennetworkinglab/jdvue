@@ -31,8 +31,8 @@ public class CatalogTest {
 
     @Test
     public void basics() throws IOException {
-        Catalog cat = new Catalog();
-        cat.load("src/test/resources/catalog.db");
+        Catalog cat = new Catalog("src/test/resources/catalog");
+        cat.load();
         cat.analyze();
 
         assertEquals("incorrect package count", 12, cat.getPackages().size());
@@ -54,8 +54,8 @@ public class CatalogTest {
 
     @Test
     public void nonMavenCat() throws IOException {
-        Catalog cat = new Catalog();
-        cat.load("src/test/resources/non_maven_cat.db");
+        Catalog cat = new Catalog("src/test/resources/non_maven_cat");
+        cat.load();
         cat.analyze();
 
         assertEquals("incorrect package count", 3, cat.getPackages().size());
@@ -77,8 +77,8 @@ public class CatalogTest {
 
     @Test
     public void abcCatNormal() throws IOException {
-        Catalog cat = new Catalog();
-        cat.load("src/test/resources/abc_cat_normal.db");
+        Catalog cat = new Catalog("src/test/resources/abc_cat_normal");
+        cat.load();
         cat.analyze();
 
         assertEquals("incorrect package count", 4, cat.getPackages().size());
@@ -97,8 +97,8 @@ public class CatalogTest {
             src/com/foobar/loop/alpha/Aaa.java:import static com.foobar.loop.beta.Bbb.returnCodeB;
                                                ^^^^^^        ^^^^^^^^^^^^^^^^^^^^^^^^
          */
-        Catalog cat = new Catalog();
-        cat.load("src/test/resources/abc_cat_static.db");
+        Catalog cat = new Catalog("src/test/resources/abc_cat_static");
+        cat.load();
         cat.analyze();
 
         assertEquals("incorrect package count", 4, cat.getPackages().size());

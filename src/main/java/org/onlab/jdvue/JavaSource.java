@@ -15,7 +15,9 @@
  */
 package org.onlab.jdvue;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 

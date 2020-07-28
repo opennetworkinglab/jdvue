@@ -45,9 +45,12 @@ public class Catalog {
     private static final String IMPORT = "import";
     private static final String STATIC = "static";
     private static final String WILDCARD = "\\.*$";
+    private static final String JPD_EXT = ".db";
 
     private static final String RE_PATH_SANS_JAVA = "^(\\S+)(/\\S+\\.java)";
     private static final Pattern PATH_SANS_JAVA = Pattern.compile(RE_PATH_SANS_JAVA);
+
+    private final String catBasePath;
 
     private final Map<String, String> packagePaths = new HashMap<>();
     private final Map<String, JavaSource> sources = new HashMap<>();
@@ -58,12 +61,30 @@ public class Catalog {
     private final Map<JavaPackage, Set<Dependency>> packageCycleSegments = new HashMap<>();
 
     /**
-     * Loads the catalog from the specified catalog file.
+     * Creates a catalog with the given base path.
      *
-     * @param catalogPath catalog file path
+     * @param catBasePath the catalog base path
+     */
+    public Catalog(String catBasePath) {
+        this.catBasePath = catBasePath;
+    }
+
+    /**
+     * Returns the base path configured for this catalog.
+     *
+     * @return the base path
+     */
+    public String basePath() {
+        return catBasePath;
+    }
+
+    /**
+     * Loads the catalog from its configured catalog file (base path with {@value JPD_EXT} extension).
+     *
      * @throws IOException if unable to read the catalog file
      */
-    public void load(String catalogPath) throws IOException {
+    public void load() throws IOException {
+        String catalogPath = catBasePath + JPD_EXT;
         InputStream is = new FileInputStream(catalogPath);
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
