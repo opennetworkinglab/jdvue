@@ -1,0 +1,10 @@
+src/com/foobar/loop/Main.java:package com.foobar.loop;
+src/com/foobar/loop/Main.java:import com.foobar.loop.alpha.Aaa;
+src/com/foobar/loop/Main.java:import com.foobar.loop.beta.Bbb;
+src/com/foobar/loop/Main.java:import com.foobar.loop.gamma.Ccc;
+src/com/foobar/loop/alpha/Aaa.java:package com.foobar.loop.alpha;
+src/com/foobar/loop/alpha/Aaa.java:import com.foobar.loop.gamma.Ccc;
+src/com/foobar/loop/beta/Bbb.java:package com.foobar.loop.beta;
+src/com/foobar/loop/beta/Bbb.java:import com.foobar.loop.alpha.Aaa;
+src/com/foobar/loop/gamma/Ccc.java:package com.foobar.loop.gamma;
+src/com/foobar/loop/gamma/Ccc.java:import com.foobar.loop.beta.Bbb;

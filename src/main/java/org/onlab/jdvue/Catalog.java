@@ -93,12 +93,18 @@ public class Catalog {
 
             } else if (pragma[0].equals(IMPORT)) {
                 if (pragma[1].equals(STATIC)) {
-                    processImportStatement(source, pragma[2]);
+                    processImportStatement(source, sansMethodName(pragma[2]));
                 } else {
                     processImportStatement(source, pragma[1]);
                 }
             }
         }
+    }
+
+    // assumes s is a dot-delimited string: "some.package.ClassName.methodName"
+    private String sansMethodName(String s) {
+        int ri = s.lastIndexOf(".");
+        return ri >= 0 ? s.substring(0, ri) : s;
     }
 
     // strips off trailing "/xxxxxxxxxx.java" if there is one

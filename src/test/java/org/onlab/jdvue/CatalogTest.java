@@ -74,4 +74,37 @@ public class CatalogTest {
         assertEquals("incorrect segment count", 3, cat.getCycleSegments().size());
         assertEquals("incorrect cycle count", 1, cat.getCycles().size());
     }
+
+    @Test
+    public void abcCatNormal() throws IOException {
+        Catalog cat = new Catalog();
+        cat.load("src/test/resources/abc_cat_normal.db");
+        cat.analyze();
+
+        assertEquals("incorrect package count", 4, cat.getPackages().size());
+        assertEquals("incorrect source count", 4, cat.getSources().size());
+
+        assertEquals("incorrect segment count", 3, cat.getCycleSegments().size());
+        assertEquals("incorrect cycle count", 1, cat.getCycles().size());
+    }
+
+    @Test
+    public void abcCatStatic() throws IOException {
+        /*
+            Verify that static imports are correctly parsed to return the "source" name (not the "method" name)...
+
+            src/com/foobar/loop/alpha/Aaa.java:package com.foobar.loop.alpha;
+            src/com/foobar/loop/alpha/Aaa.java:import static com.foobar.loop.beta.Bbb.returnCodeB;
+                                               ^^^^^^        ^^^^^^^^^^^^^^^^^^^^^^^^
+         */
+        Catalog cat = new Catalog();
+        cat.load("src/test/resources/abc_cat_static.db");
+        cat.analyze();
+
+        assertEquals("incorrect package count", 4, cat.getPackages().size());
+        assertEquals("incorrect source count", 4, cat.getSources().size());
+
+        assertEquals("incorrect segment count", 3, cat.getCycleSegments().size());
+        assertEquals("incorrect cycle count", 1, cat.getCycles().size());
+    }
 }
