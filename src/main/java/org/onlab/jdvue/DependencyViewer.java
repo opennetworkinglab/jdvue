@@ -66,16 +66,17 @@ public class DependencyViewer {
      * @param args command line arguments
      */
     public static void main(String[] args) {
+        ProgArgs progArgs = new ProgArgs(args);
+
         Catalog cat = new Catalog();
         DependencyViewer viewer = new DependencyViewer(cat);
         try {
-            String path = args[0];
-            cat.load(path + JPD_EXT);
+            cat.load(progArgs.catPath() + JPD_EXT);
             cat.analyze();
 
             System.err.println(cat);
             viewer.dumpLongestCycle(cat);
-            viewer.writeHTMLFile(path);
+            viewer.writeHTMLFile(progArgs.catPath());
         } catch (IOException e) {
             System.err.println("Unable to process catalog: " + e.getMessage());
         }
