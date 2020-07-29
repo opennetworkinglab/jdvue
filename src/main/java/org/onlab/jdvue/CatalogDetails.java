@@ -201,6 +201,7 @@ public class CatalogDetails {
         writeCodedBlock("Source Dependencies", encDependencies);
         writeCodedBlock("Package Cycles", encCycles);
         fw.close();
+        System.err.println("Wrote DATA file: " + dataFileName);
     }
 
     private void writeCodedBlock(String heading, List<String> encData) throws IOException {

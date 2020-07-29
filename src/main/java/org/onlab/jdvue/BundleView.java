@@ -62,8 +62,9 @@ public class BundleView extends AbstractReportGenerator {
         }
 
         if (longest != null) {
+            System.out.println("Longest Cycle Detected...");
             for (Dependency dependency : longest.getCycleSegments()) {
-                System.out.println(dependency);
+                System.out.println("  " + dependency);
             }
         }
     }
@@ -86,6 +87,7 @@ public class BundleView extends AbstractReportGenerator {
                 .replace(D3JS_PLACEHOLDER, d3js)
                 .replace(DATA_PLACEHOLDER, writer.writeValueAsString(toJson())));
         fw.close();
+        System.err.println("Wrote HTML report: " + htmlFile);
     }
 
     // Produces a JSON structure designed to drive the hierarchical visual
