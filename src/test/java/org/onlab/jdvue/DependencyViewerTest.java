@@ -16,14 +16,9 @@
 package org.onlab.jdvue;
 
 import org.junit.Test;
-import org.onlab.jdvue.DependencyViewer;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.onlab.jdvue.DependencyViewer.slurp;
 
 /**
  * Unit test for the dependency viewer.
@@ -32,12 +27,17 @@ import static org.onlab.jdvue.DependencyViewer.slurp;
  */
 public class DependencyViewerTest {
 
+    private class Fixture extends AbstractReportGenerator {
+    }
+
+    private final Fixture fixture = new Fixture();
+
     @Test
     public void basics() throws IOException {
         DependencyViewer.main(new String[]{"src/test/resources/catalog"});
 
-        String expected = slurp(new FileInputStream("src/test/resources/expected.html"));
-        String actual = slurp(new FileInputStream("src/test/resources/catalog.html"));
+        String expected = fixture.slurp(new FileInputStream("src/test/resources/expected.html"));
+        String actual = fixture.slurp(new FileInputStream("src/test/resources/catalog.html"));
 
         // FIXME: add more manageable assertions here
 //        assertEquals("incorrect html", expected, actual);

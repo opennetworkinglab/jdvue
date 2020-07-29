@@ -17,11 +17,6 @@ package org.onlab.jdvue;
 
 import com.google.common.testing.EqualsTester;
 import org.junit.Test;
-import org.onlab.jdvue.Dependency;
-import org.onlab.jdvue.JavaPackage;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 /**
  * Unit test for the dependency entity.
