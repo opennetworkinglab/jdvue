@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 public class ProgArgsTest {
 
     private static final String CAT_PATH = "somepath/somecat";
-    private static final String DUMP_FLAG = "-d";
+    private static final String DETAIL_FLAG = "-d";
     private static final String OTHER_FLAG = "-o";
 
     @Test
@@ -35,7 +35,7 @@ public class ProgArgsTest {
         ProgArgs pa = new ProgArgs(new String[]{CAT_PATH});
 
         assertEquals("wrong catalog path", CAT_PATH, pa.catPath());
-        assertFalse("DA flag should be false", pa.dumpAnalysis());
+        assertFalse("Detail flag should be false", pa.outputDetailData());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -44,11 +44,11 @@ public class ProgArgsTest {
     }
 
     @Test
-    public void dumpFlag() {
-        ProgArgs pa = new ProgArgs(new String[]{CAT_PATH, DUMP_FLAG});
+    public void detailFlag() {
+        ProgArgs pa = new ProgArgs(new String[]{CAT_PATH, DETAIL_FLAG});
 
         assertEquals("wrong catalog path", CAT_PATH, pa.catPath());
-        assertTrue("DA flag should be true", pa.dumpAnalysis());
+        assertTrue("Detail flag should be true", pa.outputDetailData());
     }
 
     @Test
@@ -56,6 +56,6 @@ public class ProgArgsTest {
         ProgArgs pa = new ProgArgs(new String[]{CAT_PATH, OTHER_FLAG});
 
         assertEquals("wrong catalog path", CAT_PATH, pa.catPath());
-        assertFalse("DA flag should be false", pa.dumpAnalysis());
+        assertFalse("Detail flag should be false", pa.outputDetailData());
     }
 }

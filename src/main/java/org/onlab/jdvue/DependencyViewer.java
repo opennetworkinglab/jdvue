@@ -45,6 +45,10 @@ public class DependencyViewer {
             BundleView bundleView = new BundleView(cat);
             bundleView.dumpLongestCycle();
             bundleView.writeHTMLFile();
+
+            if (progArgs.outputDetailData()) {
+                new CatalogDetails(cat).writeDetails();
+            }
         } catch (IOException e) {
             System.err.println("Unable to process catalog: " + e.getMessage());
         }

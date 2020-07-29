@@ -20,12 +20,12 @@ package org.onlab.jdvue;
  */
 public class ProgArgs {
     private static final String USAGE = "Expected Args: <catalog path> [-d]";
-    private static final String DUMP_ANALYSIS_FLAG = "-d";
+    private static final String DETAIL_DATA_FLAG = "-d";
 
     private final String catPath;
     private final String asString;
 
-    private boolean dumpAnalysis = false;
+    private boolean outputDetailData = false;
 
     public ProgArgs(String[] args) {
         if (args.length < 1) {
@@ -50,8 +50,8 @@ public class ProgArgs {
 
     private void scanForFlags(String[] args) {
         for (int i = 1; i < args.length; i++) {
-            if (DUMP_ANALYSIS_FLAG.equals(args[i])) {
-                dumpAnalysis = true;
+            if (DETAIL_DATA_FLAG.equals(args[i])) {
+                outputDetailData = true;
             }
         }
     }
@@ -71,11 +71,11 @@ public class ProgArgs {
     }
 
     /**
-     * Returns true if the dump analysis flag was set.
+     * Returns true if the detail data flag was set.
      *
      * @return true if dump analysis flag set
      */
-    public boolean dumpAnalysis() {
-        return dumpAnalysis;
+    public boolean outputDetailData() {
+        return outputDetailData;
     }
 }
