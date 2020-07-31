@@ -25,7 +25,7 @@ import re
 
 def usage_then_exit():
     print(f'Usage: python {sys.argv[0]} <srcroot> <outfilebase>')
-    exit(0)
+    exit(2)
 
 
 def reslash(s):
@@ -45,6 +45,7 @@ def get_cmdline_args():
 
     srcroot, outfilebase = sys.argv[1:3]
     if not os.path.isdir(srcroot):
+        print(f'Not a directory: {srcroot}')
         usage_then_exit()
 
     srcroot = clean_dir_name(srcroot)
@@ -63,9 +64,16 @@ def find_java_files(root):
     return result
 
 
+# RE patterns
+re_blank = re.compile(r'^\s*$')
+re_slash_comment = re.compile(r'^\s*//')
+re_single_slashstar = re.compile(r'^\s*/\*.*\*/\s*$')
+re_comm_start = re.compile(r'^\s*/\*')
+re_comm_end = re.compile(r'^.*\*/')
+re_pkg_imp = re.compile(r'^\s*(package|import)')
+
+
 def remove_slash_star_comments(lines):
-    re_comm_start = re.compile(r'^\s*/\*')
-    re_comm_end = re.compile(r'^.*\*/')
     code = []
     incomment = False
 
@@ -84,11 +92,6 @@ def remove_slash_star_comments(lines):
 
 
 def analyze_file(javafile):
-    re_pkg_imp = re.compile(r'^\s*(package|import)')
-    re_blank = re.compile(r'^\s*$')
-    re_slash_comment = re.compile(r'^\s*//')
-    re_single_slashstar = re.compile(r'^\s*/\*.*\*/\s*$')
-
     with open(javafile) as jf:
         lines = jf.readlines()
 
@@ -96,7 +99,7 @@ def analyze_file(javafile):
 
     loc = [x for x in lines if not re_blank.match(x)]
     ncloc = [x for x in loc
-        if not re_slash_comment.match(x) and not re_single_slashstar.match(x)]
+             if not re_slash_comment.match(x) and not re_single_slashstar.match(x)]
     ncloc = remove_slash_star_comments(ncloc)
     stats = len(lines), len(loc), len(ncloc)
 
