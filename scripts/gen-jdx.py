@@ -270,6 +270,7 @@ h2 {
     justify-content: flex-start;
 }
 #top>div {
+    min-width: 200px;
     margin: 8px;
     padding: 8px;
     border: 1px dotted steelblue;
@@ -281,40 +282,14 @@ h2 {
     color: #c0d4d4;
 }
 
-.pkg-item {
+.item {
     padding: 2px;
 }
-.pkg-item:hover {
+.item:hover {
     background-color: #6ad;
     color: white;
 }
-.pkg-item.selected {
-    background-color: #c5e1ff;
-    color: black;
-    font-weight: bold;
-}
-
-.src-item {
-    padding: 2px;
-}
-.src-item:hover {
-    background-color: #6ad;
-    color: white;
-}
-.src-item.selected {
-    background-color: #c5e1ff;
-    color: black;
-    font-weight: bold;
-}
-
-.imp-item {
-    padding: 2px;
-}
-.imp-item:hover {
-    background-color: #6ad;
-    color: white;
-}
-.imp-item.selected {
+.item.selected {
     background-color: #c5e1ff;
     color: black;
     font-weight: bold;
@@ -370,14 +345,11 @@ const $detp = $('#detail-pane');
 const sel = {
     pi: -1,
     si: -1,
-    fqsi: '',
     $p: null,
     $s: null,
 };
 
 const srcDepMap = {};
-
-//const expandedCycles = [];
 
 
 /* -------------------- */
@@ -405,6 +377,10 @@ const inflateData = () => {
 };
 
 const div = cls => $('<div>').addClass(cls);
+const clickable = $d => $d.addClass('clickable');
+
+
+/* --- SUMMARY panels --- */
 
 const addStat = ($div, lab, val) => {
     const $l = div('stat-label').text(lab + ':');
@@ -416,11 +392,21 @@ const addStat = ($div, lab, val) => {
 const popSummary = () => {
     $sump.find('h1').text(`Project ${jdxMeta.basename}`);
     const $sl = $sump.find('.stat-list');
-    addStat($sl, "Sources", jdxMeta.nsrcs);
     addStat($sl, "Packages", jdxMeta.npkgs);
+    addStat($sl, "Classes", jdxMeta.nsrcs);
     addStat($sl, "Cycles", jdxMeta.ncycs);
     addStat($sl, "Roots", jdxMeta.nroots);
 };
+
+const fillPkgDetails = pi => {
+    $detp.find('h1').text(xP(pi));
+    const $sl = $detp.find('.stat-list');
+    $sl.empty();
+    addStat($sl, "Classes", sources[pi].length);
+};
+
+
+/* --- INDEX lookups --- */
 
 const xP = x => packages[x];
 const xPStr = x => `${xP(x)} (${sources[x].length})`;
@@ -430,37 +416,16 @@ const xxS = xx => {
     return sources[p][s];
 };
 const xxSStr = xx => {
-    let [p, s] = xxPSi(xx);
-    let sname = sources[p][s];
     let deps = srcDepMap[xx] || []
-    let ni = deps.length;
-    return `${sname} (${ni})`
+    return `${xxS(xx)} (${deps.length})`
 };
 const xxFqSStr = xx => {
     let [p, s] = xxPSi(xx);
-    let pname = xP(p);
-    let sname = sources[p][s];
-    return `${pname}.${sname}`
+    return `${xP(p)}.${sources[p][s]}`
 };
 
 
-// === TO REVIEW =================
-
-const xFQS = x => {
-    let z = x.split(".");
-    let p = xP(z[0]);
-    let s = sources[z[0]][z[1]];
-    return `${p}.${s}`;
-};
-
-const clickable = $d => $d.addClass('clickable');
-
-const fillPkgDetails = pi => {
-    $detp.find('h1').text(xP(pi));
-    const $sl = $detp.find('.stat-list');
-    $sl.empty();
-    addStat($sl, "Sources", sources[pi].length);
-};
+/* --- PACKAGE list --- */
 
 const packageHover = pi => {
     fillPkgDetails(pi);
@@ -476,7 +441,6 @@ const pkgRef = pi => `[${pi}] ${xP(pi)}`;
 $('#pkg-list .content').click(ev => {
     let $p = $(ev.target);
     let pi = $p.data('idx');
-    console.log(`Clicked on package ${pkgRef(pi)}`);
     if (sel.$p) {
         deselectPackage();
     }
@@ -484,7 +448,6 @@ $('#pkg-list .content').click(ev => {
 });
 
 const deselectPackage = () => {
-    console.log(`Deselecting package ${pkgRef(sel.pi)}`);
     sel.$p.removeClass('selected');
     sel.$p = null;
     sel.pi = -1;
@@ -494,6 +457,7 @@ const deselectPackage = () => {
 
 const selectPackage = ($p, pi) => {
     console.log(`Selecting package ${pkgRef(pi)}`);
+    
     $p.addClass('selected');
     sel.$p = $p;
     sel.pi = pi;
@@ -504,29 +468,27 @@ const popPackageList = () => {
     const $pl = $('#pkg-list .content');
 
     for (let pi=0; pi<packages.length; pi++) {
-        let $item = clickable(div('pkg-item').text(xPStr(pi)));
+        let $item = clickable(div('item').text(xPStr(pi)));
         $item.data('idx', pi);
-
-        // TODO: add classes for roots/cyclics
-
         $item.hover(ev => packageHover($(ev.target).data('idx')),
                     ev => clearHover());
-
         $pl.append($item);
     }
 };
+
+
+/* --- SOURCE list --- */
 
 const mkFqsi = si => sel.pi < 0 ? `-.${si}` : `${sel.pi}.${si}`;
 
 const srcRef = si => {
     let fqsi = mkFqsi(si);
-    return (sel.pi < 0) ? `[${fqsi}] ???` : `[${fqsi}] ${xFQS(fqsi)}`;
+    return (sel.pi < 0) ? `[${fqsi}] ???` : `[${fqsi}] ${xxFqSStr(fqsi)}`;
 };
 
 $('#src-list .content').click(ev => {
     let $s = $(ev.target);
     let si = $s.data('idx');
-    console.log(`Clicked on source ${srcRef(si)}`);
     if (sel.$s) {
         deselectSource();
     }
@@ -536,49 +498,52 @@ $('#src-list .content').click(ev => {
 const deselectSource = () => {
     console.log(`Deselecting Source ${srcRef(sel.si)}`);
     sel.$s.removeClass('selected');
-    sel.$s = null;
-    sel.si = -1;
     clearImportList();
 };
 
 const selectSource = ($s, si) => {
     console.log(`Selecting source ${srcRef(si)}`);
+    
     $s.addClass('selected');
     sel.$s = $s;
     sel.si = si;
     popImportList(si);
 };
 
-
 const popSourceList = pi => {
     const $sl = $('#src-list .content');
 
     for (let si=0; si<sources[pi].length; si++) {
         let fqsi = mkFqsi(si);
-        let $item = clickable(div('src-item').text(xxSStr(fqsi)));
+        let $item = clickable(div('item').text(xxSStr(fqsi)));
         $item.data('idx', si);
-
-        // TODO: add classes for this source
-
-//        $item.hover(ev => packageHover($(ev.target).data('idx')),
-//                    ev => clearHover());
-
         $sl.append($item);
     }
 };
 
 const clearSourceList = () => {
     $('#src-list .content').empty();
+    sel.$s = null;
+    sel.si = -1;
 };
+
+
+/* --- IMPORT list --- */
+
+$('#imp-list .content').click(ev => {
+    let $tgt = $(ev.target);
+    let ssi = $tgt.data('dd');
+    console.log(`Clicked on import ${xxFqSStr(ssi)}`);
+    // navTo(ssi);
+});
 
 const popImportList = si => {
     const xx = mkFqsi(si);
-    console.log('Wanna populate the import list for', xx);
     const $il = $('#imp-list .content');
     
     let deps = srcDepMap[xx] || [];
     deps.forEach(dd => {
-        let $item = clickable(div('imp-item').text(xxFqSStr(dd)));
+        let $item = clickable(div('item').text(xxFqSStr(dd)));
         $item.data('dd', dd);
         $il.append($item);
     });
