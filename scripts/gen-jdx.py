@@ -20,9 +20,8 @@ Author: Simon Hunt / July 2020
 
 import os
 import sys
-import re
 
-#== Script Constants
+# == Script Constants
 
 jdx_version = '1.0'
 
@@ -33,13 +32,12 @@ c_green = '#2ca02c'
 c_blue = 'steelblue'
 c_grey = '#bbb'
 
-
-#== Other configuration values
+# == Other configuration values
 
 data_suffix = '.data'
 html_suffix = '.jdx.html'
 
-#== Globals
+# == Globals
 meta = {}
 comments = []
 packages = []
@@ -75,7 +73,7 @@ def print_block_heading(lines):
 
 
 def set_if_absent(dic, key, setval):
-    if not key in dic:
+    if key not in dic:
         dic[key] = setval
     return dic[key]
 
@@ -138,13 +136,13 @@ def get_cmdline_args():
         usage_then_exit()
     basename = clean_dir_name(sys.argv[1])
     basename = basename[:-len(data_suffix)] \
-            if basename.endswith(data_suffix) \
-            else basename
+        if basename.endswith(data_suffix) \
+        else basename
     return basename
 
 
 def parse_data_file(infile):
-    meta.update({'npkgs' : 0, 'nsrcs' : 0, 'ncycs' : 0})
+    meta.update({'npkgs': 0, 'nsrcs': 0, 'ncycs': 0})
     with open(infile) as f:
         for line in f:
             fn = parser_dispatch[line[0]]
@@ -155,6 +153,7 @@ def parse_data_file(infile):
 def populate_meta():
     meta['title'], meta['date'], meta['file'] = comments[:3]
     meta['basename'] = meta['file'].replace('.data', '')
+
 
 """
 def create_decode_maps():
@@ -203,6 +202,7 @@ def compute_dep_roots():
 
 """
 
+
 def find_roots():
     global roots
     all_pkg_codes = set(range(len(packages)))
@@ -215,6 +215,7 @@ def dump_list(tag, lst):
     print(f'\n{tag} ...')
     for x in lst:
         print(f'  {x}')
+
 
 def dump_dict(tag, dic):
     print(f'\n{tag} ...')
@@ -397,9 +398,9 @@ struct_template = """
 """
 
 jquery_351min_template = '<script ' + \
-    'src="https://code.jquery.com/jquery-3.5.1.min.js" ' + \
-    'integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" ' + \
-    'crossorigin="anonymous"></script>\n'
+                         'src="https://code.jquery.com/jquery-3.5.1.min.js" ' + \
+                         'integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" ' + \
+                         'crossorigin="anonymous"></script>\n'
 
 version_template = f'const jdxVersion = "{jdx_version}";\n'
 
@@ -604,6 +605,7 @@ popPackageList();
 
 """
 
+
 def wr_title(hf):
     hf.write(f'    <title>{meta["basename"]} JDX</title>\n')
 
@@ -617,6 +619,7 @@ def wr_style(hf):
 
 def wr_struct(hf):
     hf.write(struct_template)
+
 
 def wr_jdx_data(hf):
     hf.write('const jdxMeta = {\n')
@@ -656,6 +659,7 @@ def wr_jdx_data(hf):
     for r in roots:
         hf.write(f'{r},')
     hf.write('];\n')
+
 
 def wr_script(hf):
     hf.write(jquery_351min_template)
