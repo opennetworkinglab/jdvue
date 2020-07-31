@@ -55,7 +55,9 @@ src_dep_map = {}
 expanded_cycles = []
 
 
-def print_block_heading(lines):
+# == Functions definitions
+
+def block_heading(lines):
     def center(txt, size):
         spc = size - len(txt)
         left = spc // 2
@@ -96,6 +98,7 @@ def parse_source(src):
 
 
 def parse_dependency(dep):
+    meta['ndeps'] += 1
     non_root_pkg_code = int(dep.split('.')[0])
     non_roots.add(non_root_pkg_code)
     return dep, dependencies
@@ -142,7 +145,7 @@ def get_cmdline_args():
 
 
 def parse_data_file(infile):
-    meta.update({'npkgs': 0, 'nsrcs': 0, 'ncycs': 0})
+    meta.update({'npkgs': 0, 'nsrcs': 0, 'ndeps': 0, 'ncycs': 0})
     with open(infile) as f:
         for line in f:
             fn = parser_dispatch[line[0]]
@@ -150,57 +153,9 @@ def parse_data_file(infile):
             item_list.append(item)
 
 
-def populate_meta():
+def augment_meta():
     meta['title'], meta['date'], meta['file'] = comments[:3]
     meta['basename'] = meta['file'].replace('.data', '')
-
-
-"""
-def create_decode_maps():
-    for pidx in range(len(packages)):
-        decode_pkg[str(pidx)] = packages[pidx]
-
-    for pkg, src_list in package_map.items():
-        src_map = set_if_absent(decode_src_map, pkg, {})
-        for sidx in range(len(src_list)):
-            src_map[str(sidx)] = src_list[sidx]
-
-
-def decode_dotted_source(dotted):
-    # returns package and fully qualified source
-    pidx, sidx = dotted.split('.')
-    pkg = decode_pkg[pidx]
-    src = decode_src_map[pkg][sidx]
-    return pkg, f'{pkg}.{src}'
-
-
-def decode_dependencies():
-    for enc_dep in dependencies:
-        src_code, tgt_code = enc_dep.split('>')
-        src_p, src_s = decode_dotted_source(src_code)
-        tgt_p, tgt_s = decode_dotted_source(tgt_code)
-        dep_map = set_if_absent(src_dep_map, src_s, [])
-        dep_map.append(tgt_s)
-        non_roots.add(src_p)
-
-
-def decode_cycle(cyc):
-    return [decode_pkg[p] for p in cyc.split('}') if p]
-
-
-def decode_cycles():
-    for cyc in cycles:
-        expanded_cycles.append(decode_cycle(cyc))
-
-
-def compute_dep_roots():
-    global roots
-    allpkgs = set(packages)
-    rootset = allpkgs.difference(non_roots)
-    roots = sorted(list(rootset))
-    meta['nroots'] = len(roots)
-
-"""
 
 
 def find_roots():
@@ -224,20 +179,8 @@ def dump_dict(tag, dic):
 
 
 def report():
-    # dump_list('comments', comments)
-    dump_list('packages', packages)
-    dump_dict('package map', package_map)
-    dump_list('dependencies', dependencies)
     dump_list('cycles', cycles)
     dump_list('roots', roots)
-    """
-    dump_list('non-roots', non_roots)
-
-    dump_dict('decode package', decode_pkg)
-    dump_dict('decode sources', decode_src_map)
-    dump_dict('source dep map', src_dep_map)
-    dump_list('decoded cycles', expanded_cycles)
-    """
 
     dump_dict('meta', meta)
 
@@ -364,6 +307,19 @@ h2 {
     font-weight: bold;
 }
 
+.imp-item {
+    padding: 2px;
+}
+.imp-item:hover {
+    background-color: #6ad;
+    color: white;
+}
+.imp-item.selected {
+    background-color: #c5e1ff;
+    color: black;
+    font-weight: bold;
+}
+
 """
 
 struct_template = """
@@ -398,19 +354,14 @@ struct_template = """
 """
 
 jquery_351min_template = '<script ' + \
-                         'src="https://code.jquery.com/jquery-3.5.1.min.js" ' + \
-                         'integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" ' + \
+                         'src="https://code.jquery.com/jquery-3.5.1.min.js"\n        ' + \
+                         'integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="\n        ' + \
                          'crossorigin="anonymous"></script>\n'
 
-version_template = f'const jdxVersion = "{jdx_version}";\n'
-
-script_template = version_template + """
-$('#ver').text("JDX " + jdxVersion);
-
-const logVersion = () => {
-    console.log('JDX version', jdxVersion);
-    console.log('jQuery version', $().jquery);
-};
+script_template = """
+/* -------------- */
+/* Internal State */
+/* -------------- */
 
 const $top = $('#top');
 const $sump = $('#summary-pane');
@@ -422,6 +373,35 @@ const sel = {
     fqsi: '',
     $p: null,
     $s: null,
+};
+
+const srcDepMap = {};
+
+//const expandedCycles = [];
+
+
+/* -------------------- */
+/* Function Definitions */
+/* -------------------- */
+
+const logVersion = () => {
+    $('#ver').text("JDX " + jdxVersion);
+    console.log('JDX version', jdxVersion);
+    console.log('jQuery version', $().jquery);
+};
+
+const inflateData = () => {
+    console.log('Inflating data...')
+    
+    codedDeps.forEach(d => {
+        let [src, tgt] = d.split('>');
+        let impList = srcDepMap[src];
+        if (!impList) {
+            impList = [];
+            srcDepMap[src] = impList;
+        }
+        impList.push(tgt);
+    });
 };
 
 const div = cls => $('<div>').addClass(cls);
@@ -442,18 +422,8 @@ const popSummary = () => {
     addStat($sl, "Roots", jdxMeta.nroots);
 };
 
-// packages []
-// sources [ [], [], ... ]
-// codedDeps []
-// codedCycles []
-// codedRoots []
-
-//const srcDepMap = {};
-//const expandedCycles = [];
-
 const xP = x => packages[x];
 const xPStr = x => `${xP(x)} (${sources[x].length})`;
-
 const xxPSi = xx => xx.split('.');
 const xxS = xx => {
     let [p, s] = xxPSi(xx);
@@ -461,15 +431,20 @@ const xxS = xx => {
 };
 const xxSStr = xx => {
     let [p, s] = xxPSi(xx);
+    let sname = sources[p][s];
+    let deps = srcDepMap[xx] || []
+    let ni = deps.length;
+    return `${sname} (${ni})`
+};
+const xxFqSStr = xx => {
+    let [p, s] = xxPSi(xx);
     let pname = xP(p);
     let sname = sources[p][s];
-    let ni = 0;
-    return `${pname}.${sname} (${ni})`
+    return `${pname}.${sname}`
 };
 
 
-
-
+// === TO REVIEW =================
 
 const xFQS = x => {
     let z = x.split(".");
@@ -514,6 +489,7 @@ const deselectPackage = () => {
     sel.$p = null;
     sel.pi = -1;
     clearSourceList();
+    clearImportList();
 };
 
 const selectPackage = ($p, pi) => {
@@ -562,7 +538,7 @@ const deselectSource = () => {
     sel.$s.removeClass('selected');
     sel.$s = null;
     sel.si = -1;
-    //clearImportList();
+    clearImportList();
 };
 
 const selectSource = ($s, si) => {
@@ -570,7 +546,7 @@ const selectSource = ($s, si) => {
     $s.addClass('selected');
     sel.$s = $s;
     sel.si = si;
-    //popImportList(si);
+    popImportList(si);
 };
 
 
@@ -595,16 +571,51 @@ const clearSourceList = () => {
     $('#src-list .content').empty();
 };
 
+const popImportList = si => {
+    const xx = mkFqsi(si);
+    console.log('Wanna populate the import list for', xx);
+    const $il = $('#imp-list .content');
+    
+    let deps = srcDepMap[xx] || [];
+    deps.forEach(dd => {
+        let $item = clickable(div('imp-item').text(xxFqSStr(dd)));
+        $item.data('dd', dd);
+        $il.append($item);
+    });
+};
 
-
-/* Mainline Code starts here */
-
-logVersion();
-popSummary();
-popPackageList();
+const clearImportList = () => {
+    $('#imp-list .content').empty();
+};
 
 """
 
+version_template = f'const jdxVersion = "{jdx_version}";\n\n'
+
+mainline_template = """
+/* ------------------------- */
+/* Mainline Code starts here */
+/* ------------------------- */
+
+console.log('Now under New Management!');
+
+logVersion();
+inflateData();
+popSummary();
+popPackageList();
+"""
+
+# -------------------------------------------------------------------------
+# == Python "constants"
+
+html_template_start = '<!DOCTYPE html>\n<html>\n<head>\n'
+html_template_meta = '    <meta charset="utf-8">\n'
+html_template_middle = '</head>\n<body>\n'
+html_template_end = '</body>\n</html>\n'
+
+
+# -------------------------------------------------------------------------
+# == More function definitions
 
 def wr_title(hf):
     hf.write(f'    <title>{meta["basename"]} JDX</title>\n')
@@ -622,6 +633,9 @@ def wr_struct(hf):
 
 
 def wr_jdx_data(hf):
+    hf.write('/* ------------ */\n')
+    hf.write('/* Project Data */\n')
+    hf.write('/* ------------ */\n\n')
     hf.write('const jdxMeta = {\n')
     for k, v in meta.items():
         vstr = f'"{v}"' if type(v) == str else f'{v}'
@@ -666,6 +680,8 @@ def wr_script(hf):
     hf.write('<script>\n')
     wr_jdx_data(hf)
     hf.write(script_template)
+    hf.write(version_template)
+    hf.write(mainline_template)
     hf.write('</script>\n')
 
 
@@ -677,12 +693,6 @@ def populate_html_head(hf):
 def populate_html_body(hf):
     wr_struct(hf)
     wr_script(hf)
-
-
-html_template_start = '<!DOCTYPE html>\n<html>\n<head>\n'
-html_template_meta = '    <meta charset="utf-8">\n'
-html_template_middle = '</head>\n<body>\n'
-html_template_end = '</body>\n</html>\n'
 
 
 def write_html(htmlfile):
@@ -697,9 +707,7 @@ def write_html(htmlfile):
 
 def main():
     basename = get_cmdline_args()
-    print_block_heading([
-        'Java Source', 'Package Dependency Explorer', 'Generator'
-    ])
+    block_heading(['Java Source', 'Package Dependency Explorer', 'Generator'])
 
     datafile = basename + data_suffix
     htmlfile = basename + html_suffix
@@ -709,14 +717,8 @@ def main():
 
     print(f'Reading from file: {datafile}...')
     parse_data_file(datafile)
-    populate_meta()
+    augment_meta()
     find_roots()
-
-    # TODO: --- these will be written in JavaScript
-    # create_decode_maps()
-    # decode_dependencies()
-    # decode_cycles()
-
     report()
 
     print(f'\nWriting to file: {htmlfile}...')
