@@ -305,7 +305,7 @@ h2 {
 struct_template = """
 <div id="container">
   <div id="sidebar">
-    <div id="summary-pane" class="panel">
+    <div id="summary-pane" class="panel clickable">
         <h1></h1>
         <div class="stat-list"></div>
     </div>
@@ -406,6 +406,8 @@ const popSummary = () => {
     addStat($sl, "Roots", jdxMeta.nroots);
 };
 
+$sump.click(ev => deselectPackage());
+
 const fillPkgDetails = pi => {
     $detp.find('h1').text(xP(pi));
     const $sl = $detp.find('.stat-list');
@@ -463,7 +465,7 @@ const doPClick = $p => {
 };
 
 const deselectPackage = () => {
-    sel.$p.removeClass('selected');
+    sel.$p && sel.$p.removeClass('selected');
     sel.$p = null;
     sel.pi = -1;
     clearSourceList();
@@ -503,9 +505,7 @@ $slist.click(ev => doSClick($(ev.target)));
 
 const doSClick = $s => {
     let si = $s.attr('data-idx');
-    if (sel.$s) {
-        deselectSource();
-    }
+    sel.$s && deselectSource();
     selectSource($s, si);
 };
 
