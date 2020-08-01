@@ -23,7 +23,7 @@ import sys
 
 # == Script Constants
 
-jdx_version = '1.0'
+jdx_version = '1.0.1'
 
 # some colors
 c_red = '#ff0000'
@@ -215,15 +215,6 @@ h2 {
     padding: 0;
 }
 
-#ver {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    color: #999;
-    font-size: 12px;
-    font-style: italic;
-    padding: 4px;
-}
 
 #container {
     min-height: 600px;
@@ -237,7 +228,21 @@ h2 {
     border: 1px solid white;
 }
 
-#sidebar>div {
+#sidebar {
+    position: relative;
+}
+
+#ver {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    color: #d4c2a0;
+    font-size: 12px;
+    font-style: italic;
+    padding: 4px;
+}
+
+#sidebar .panel {
     margin: 10px 10px 20px 10px;
     background-color: #ffffff;
     box-shadow: 2px 2px 4px 2px #777777;
@@ -265,18 +270,18 @@ h2 {
     font-weight: bold;
 }
 
-#top {
+#lists {
     display: flex;
     justify-content: flex-start;
 }
-#top>div {
+#lists>div {
     min-width: 200px;
     margin: 8px;
     padding: 8px;
     border: 1px dotted steelblue;
     background-color: white;
 }
-#top>div h2 {
+#lists>div h2 {
     border-bottom: 2px dotted #ddd;
     margin-bottom: 6px;
     color: #c0d4d4;
@@ -298,20 +303,20 @@ h2 {
 """
 
 struct_template = """
-<div id="ver"></div>
 <div id="container">
   <div id="sidebar">
-    <div id="summary-pane">
+    <div id="summary-pane" class="panel">
         <h1></h1>
         <div class="stat-list"></div>
     </div>
-    <div id="detail-pane">
+    <div id="detail-pane" class="panel">
         <h1></h1>
         <div class="stat-list"></div>
     </div>
+    <div id="ver"></div>
   </div>
 
-<div id="top">
+<div id="lists">
     <div id="pkg-list">
         <h2>Packages</h2>
         <div class="content"></div>
@@ -338,9 +343,12 @@ script_template = """
 /* Internal State */
 /* -------------- */
 
-const $top = $('#top');
 const $sump = $('#summary-pane');
 const $detp = $('#detail-pane');
+const $lists = $('#lists');
+const $plist = $('#pkg-list .content');
+const $slist = $('#src-list .content');
+const $ilist = $('#imp-list .content');
 
 const sel = {
     pi: -1,
@@ -424,6 +432,13 @@ const xxFqSStr = xx => {
     return `${xP(p)}.${sources[p][s]}`
 };
 
+const navTo = ssi => {
+    console.log('** NAV TO **', ssi);
+    deselectPackage();
+    const [p, s] = xxPSi(ssi);
+    doPClick($plist.find(`.item[data-idx="${p}"]`));
+    doSClick($slist.find(`.item[data-idx="${s}"]`));
+};
 
 /* --- PACKAGE list --- */
 
@@ -438,14 +453,14 @@ const clearHover = () => {
 
 const pkgRef = pi => `[${pi}] ${xP(pi)}`;
 
-$('#pkg-list .content').click(ev => {
-    let $p = $(ev.target);
-    let pi = $p.data('idx');
+$plist.click(ev => doPClick($(ev.target)));
+
+const doPClick = $p => {
     if (sel.$p) {
         deselectPackage();
     }
-    selectPackage($p, pi);
-});
+    selectPackage($p, $p.attr('data-idx'));
+};
 
 const deselectPackage = () => {
     sel.$p.removeClass('selected');
@@ -465,14 +480,12 @@ const selectPackage = ($p, pi) => {
 };
 
 const popPackageList = () => {
-    const $pl = $('#pkg-list .content');
-
     for (let pi=0; pi<packages.length; pi++) {
         let $item = clickable(div('item').text(xPStr(pi)));
-        $item.data('idx', pi);
-        $item.hover(ev => packageHover($(ev.target).data('idx')),
+        $item.attr('data-idx', pi);
+        $item.hover(ev => packageHover($(ev.target).attr('data-idx')),
                     ev => clearHover());
-        $pl.append($item);
+        $plist.append($item);
     }
 };
 
@@ -483,20 +496,20 @@ const mkFqsi = si => sel.pi < 0 ? `-.${si}` : `${sel.pi}.${si}`;
 
 const srcRef = si => {
     let fqsi = mkFqsi(si);
-    return (sel.pi < 0) ? `[${fqsi}] ???` : `[${fqsi}] ${xxFqSStr(fqsi)}`;
+    return `[${fqsi}] ${xxFqSStr(fqsi)}`;
 };
 
-$('#src-list .content').click(ev => {
-    let $s = $(ev.target);
-    let si = $s.data('idx');
+$slist.click(ev => doSClick($(ev.target)));
+
+const doSClick = $s => {
+    let si = $s.attr('data-idx');
     if (sel.$s) {
         deselectSource();
     }
     selectSource($s, si);
-});
+};
 
 const deselectSource = () => {
-    console.log(`Deselecting Source ${srcRef(sel.si)}`);
     sel.$s.removeClass('selected');
     clearImportList();
 };
@@ -511,18 +524,15 @@ const selectSource = ($s, si) => {
 };
 
 const popSourceList = pi => {
-    const $sl = $('#src-list .content');
-
     for (let si=0; si<sources[pi].length; si++) {
-        let fqsi = mkFqsi(si);
-        let $item = clickable(div('item').text(xxSStr(fqsi)));
-        $item.data('idx', si);
-        $sl.append($item);
+        let $item = clickable(div('item').text(xxSStr(mkFqsi(si))));
+        $item.attr('data-idx', si);
+        $slist.append($item);
     }
 };
 
 const clearSourceList = () => {
-    $('#src-list .content').empty();
+    $slist.empty();
     sel.$s = null;
     sel.si = -1;
 };
@@ -530,27 +540,24 @@ const clearSourceList = () => {
 
 /* --- IMPORT list --- */
 
-$('#imp-list .content').click(ev => {
+$ilist.click(ev => {
     let $tgt = $(ev.target);
-    let ssi = $tgt.data('dd');
-    console.log(`Clicked on import ${xxFqSStr(ssi)}`);
-    // navTo(ssi);
+    let ssi = $tgt.attr('data-dd');
+    console.log(`Clicked on import [${ssi}] ${xxFqSStr(ssi)}`);
+    navTo(ssi);
 });
 
 const popImportList = si => {
-    const xx = mkFqsi(si);
-    const $il = $('#imp-list .content');
-    
-    let deps = srcDepMap[xx] || [];
+    let deps = srcDepMap[mkFqsi(si)] || [];
     deps.forEach(dd => {
         let $item = clickable(div('item').text(xxFqSStr(dd)));
-        $item.data('dd', dd);
-        $il.append($item);
+        $item.attr('data-dd', dd);
+        $ilist.append($item);
     });
 };
 
 const clearImportList = () => {
-    $('#imp-list .content').empty();
+    $ilist.empty();
 };
 
 """
