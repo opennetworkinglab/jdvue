@@ -254,6 +254,9 @@ h2 {
     display: none;
     color: #6ad;
 }
+#detail-pane.root {
+    color: #66d;
+}
 
 .clickable {
     cursor: pointer;
@@ -298,6 +301,18 @@ h2 {
     background-color: #c5e1ff;
     color: black;
     font-weight: bold;
+}
+
+.item.root {
+    color: #88f;
+}
+.item.root:hover {
+    background-color: #66d;
+    color: white;
+}
+.item.root.selected {
+    background-color: #bbe;
+    color: white;
 }
 
 """
@@ -409,6 +424,9 @@ const popSummary = () => {
 $sump.click(ev => deselectPackage());
 
 const fillPkgDetails = pi => {
+    let isRoot = codedRoots.includes(parseInt(pi, 10));
+    $detp.toggleClass('root', isRoot);
+    
     $detp.find('h1').text(xP(pi));
     const $sl = $detp.find('.stat-list');
     $sl.empty();
@@ -487,6 +505,9 @@ const popPackageList = () => {
         $item.attr('data-idx', pi);
         $item.hover(ev => packageHover($(ev.target).attr('data-idx')),
                     ev => clearHover());
+                    
+        codedRoots.includes(pi) && $item.addClass('root').attr('data-root', 1);
+                
         $plist.append($item);
     }
 };
