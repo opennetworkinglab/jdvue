@@ -239,7 +239,7 @@ h2 {
     background-color: #ffffff;
     box-shadow: 2px 2px 4px 2px #777777;
     padding: 5px;
-    width: 192px;
+    width: 220px;
 }
 
 #sidebar .panel.hideable {
@@ -251,6 +251,10 @@ h2 {
 }
 #sidebar .panel.hideable.incyc {
     color: #f00;
+}
+
+#detail-pane {
+    opacity: 0.5;
 }
 
 .clickable {
@@ -265,7 +269,6 @@ h2 {
 .stat-label {
 }
 .stat-value {
-    font-weight: bold;
 }
 
 #lists {
@@ -289,12 +292,12 @@ h2 {
     padding: 2px;
 }
 .item:hover {
-    background-color: #6ad;
+    background-color: #888;
     color: white;
 }
 .item.selected {
-    background-color: #c5e1ff;
-    color: black;
+    background-color: #888;
+    color: white;
     font-weight: bold;
 }
 
@@ -422,23 +425,43 @@ const inflateData = () => {
         pkgCycMap[pi] = cis;
       });
     });
-    console.log('cycles...', cycles);
-    console.log('package cycles...', pkgCycMap);
+    //console.log('cycles...', cycles);
+    //console.log('package cycles...', pkgCycMap);
 };
 
 const div = cls => $('<div>').addClass(cls);
 const clickable = $d => $d.addClass('clickable');
 
 
-/* --- SUMMARY panels --- */
+/* --- SIDEBAR panels --- */
 
 const addStat = ($div, lab, val) => {
-    const $l = div('stat-label').text(lab + ':');
-    const $v = div('stat-value').text(val);
+    const $l = div('stat-label').html(lab);
+    const $v = div('stat-value').html(val);
     const $si = div('stat-item').append($l).append($v);
     $div.append($si);
 }
 
+const nextItem = (arr, item) => {
+  let n = arr.indexOf(item) + 1;
+  n = n === arr.length ? 0 : n;
+  return arr[n];
+};
+
+const getDeps = (pi, pCyc) => {
+  let tagNext = {};
+  pCyc.forEach(ci => {
+    tagNext[nextItem(cycles[ci], pi)] = 1;
+  });
+  return Object.keys(tagNext);
+};
+
+const popCycLinks = ($sl, pi, pCyc) => {
+  getDeps(pi, pCyc).forEach(k => {
+    addStat($sl, '&rarr;', insSpaces(xP(k)));
+  });
+};
+    
 const popSummary = () => {
     $sump.find('h1').text(`Project ${jdxMeta.basename}`);
     const $sl = $sump.find('.stat-list');
@@ -461,13 +484,14 @@ const updateStatsPane = ($pane, pi) => {
     let inCyc = nCyc > 0;
     $pane.toggleClass('incyc', inCyc);
     
-    $pane.find('h1').text(xP(pi));
+    $pane.find('h1').text(insSpaces(xP(pi)));
     const $sl = $pane.find('.stat-list');
     $sl.empty();
+    isRoot && addStat($sl, "Root", "(no dependencies)");
     addStat($sl, "Classes", nSrc);
     inCyc && addStat($sl, "In Cycles", nCyc); 
+    inCyc && popCycLinks($sl, pi, pCyc);
 };
-
 
 const fillPkgDetails = pi => {
     updateStatsPane($detp, pi);
@@ -478,7 +502,9 @@ const updateSelPane = () => {
 };
 
 
-/* --- INDEX lookups --- */
+/* --- DATA wrangling --- */
+
+const insSpaces = z => z.replace(/\\./g, ' .');
 
 const xP = x => packages[x];
 const xPStr = x => `${xP(x)} (${sources[x].length})`;
@@ -496,6 +522,19 @@ const xxFqSStr = xx => {
     return `${xP(p)}.${sources[p][s]}`
 };
 
+const pkgsFromFqsiList = arr => {
+    let pTags = {};
+    arr.forEach(fq => {
+      pTags[fq.split('.')[0]] = 1;
+    });
+    return Object.keys(pTags);
+};
+ 
+const pkgsInCycs = arr => {
+    let inCycs = Object.keys(pkgCycMap);
+    return arr.filter(pi => inCycs.includes(pi));
+};
+
 const navTo = ssi => {
     console.log('** NAV TO **', ssi);
     deselectPackage();
@@ -503,6 +542,7 @@ const navTo = ssi => {
     doPClick($plist.find(`.item[data-idx="${p}"]`));
     doSClick($slist.find(`.item[data-idx="${s}"]`));
 };
+
 
 /* --- PACKAGE list --- */
 
@@ -595,8 +635,18 @@ const selectSource = ($s, si) => {
 
 const popSourceList = pi => {
     for (let si=0; si<sources[pi].length; si++) {
+        let fq = mkFqsi(si);
+        let sdeps = srcDepMap[fq] || [];
+        let depps = pkgsFromFqsiList(sdeps);
+        let cycps = pkgsInCycs(depps);
+        let inCyc = cycps.length > 0;
+        
         let $item = clickable(div('item').text(xxSStr(mkFqsi(si))));
         $item.attr('data-idx', si);
+        $item.attr('data-depp', depps);
+        $item.attr('data-depc', cycps);
+        $item.toggleClass('incyc', inCyc);
+        
         $slist.append($item);
     }
 };
@@ -619,9 +669,17 @@ $ilist.click(ev => {
 
 const popImportList = si => {
     let deps = srcDepMap[mkFqsi(si)] || [];
+    let ddps = pkgsFromFqsiList(deps);
+    let cycps = pkgsInCycs(ddps);
+
     deps.forEach(dd => {
+        let [p, s] = dd.split('.');
+        let inCyc = cycps.includes(p);
+        
         let $item = clickable(div('item').text(xxFqSStr(dd)));
         $item.attr('data-dd', dd);
+        $item.toggleClass('incyc', inCyc);
+        
         $ilist.append($item);
     });
 };
