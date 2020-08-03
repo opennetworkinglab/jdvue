@@ -25,13 +25,6 @@ import sys
 
 jdx_version = '1.0.1'
 
-# some colors
-c_red = '#ff0000'
-c_yellow = '#d59800'
-c_green = '#2ca02c'
-c_blue = 'steelblue'
-c_grey = '#bbb'
-
 # == Other configuration values
 
 data_suffix = '.data'
@@ -186,14 +179,13 @@ def report():
 
 
 # === TEMPLATES to be inserted into the HTML page ===========================
-
-css_color_template = f"""
-.red {{ color: {c_red}; }}
-.yellow {{ color: {c_yellow}; }}
-.green {{ color: {c_green}; }}
-.blue {{ color: {c_blue}; }}
-.grey {{ color: {c_grey}; }}
-"""
+'''
+c_red = '#ff0000'
+c_yellow = '#d59800'
+c_green = '#2ca02c'
+c_blue = 'steelblue'
+c_grey = '#bbb'
+'''
 
 css_template = """
 body {
@@ -250,12 +242,15 @@ h2 {
     width: 192px;
 }
 
-#detail-pane {
+#sidebar .panel.hideable {
     display: none;
-    color: #6ad;
 }
-#detail-pane.root {
+
+#sidebar .panel.hideable.root {
     color: #66d;
+}
+#sidebar .panel.hideable.incyc {
+    color: #f00;
 }
 
 .clickable {
@@ -315,6 +310,18 @@ h2 {
     color: white;
 }
 
+.item.incyc {
+    color: #f00;
+}
+.item.incyc:hover {
+    background-color: #d00;
+    color: white;
+}
+.item.incyc.selected {
+    background-color: #fcc;
+    color: white;
+}
+
 """
 
 struct_template = """
@@ -324,7 +331,11 @@ struct_template = """
         <h1></h1>
         <div class="stat-list"></div>
     </div>
-    <div id="detail-pane" class="panel">
+    <div id="select-pane" class="panel hideable">
+        <h1></h1>
+        <div class="stat-list"></div>
+    </div>
+    <div id="detail-pane" class="panel hideable">
         <h1></h1>
         <div class="stat-list"></div>
     </div>
@@ -359,6 +370,7 @@ script_template = """
 /* -------------- */
 
 const $sump = $('#summary-pane');
+const $selp = $('#select-pane');
 const $detp = $('#detail-pane');
 const $lists = $('#lists');
 const $plist = $('#pkg-list .content');
@@ -373,6 +385,8 @@ const sel = {
 };
 
 const srcDepMap = {};
+const cycles = [];
+const pkgCycMap = {};
 
 
 /* -------------------- */
@@ -397,6 +411,19 @@ const inflateData = () => {
         }
         impList.push(tgt);
     });
+    
+    codedCycles.forEach((c, ci) => {
+      let cp = c.split("}");
+      cp.pop();
+      cycles.push(cp);
+      cp.forEach(pi => {
+        let cis = pkgCycMap[pi] || [];
+        cis.push(ci);
+        pkgCycMap[pi] = cis;
+      });
+    });
+    console.log('cycles...', cycles);
+    console.log('package cycles...', pkgCycMap);
 };
 
 const div = cls => $('<div>').addClass(cls);
@@ -423,14 +450,31 @@ const popSummary = () => {
 
 $sump.click(ev => deselectPackage());
 
-const fillPkgDetails = pi => {
-    let isRoot = codedRoots.includes(parseInt(pi, 10));
-    $detp.toggleClass('root', isRoot);
+const updateStatsPane = ($pane, pi) => {
+    let nSrc = sources[pi].length;
     
-    $detp.find('h1').text(xP(pi));
-    const $sl = $detp.find('.stat-list');
+    let isRoot = codedRoots.includes(parseInt(pi, 10));
+    $pane.toggleClass('root', isRoot);
+    
+    let pCyc = pkgCycMap[pi] || [];
+    let nCyc = pCyc.length;
+    let inCyc = nCyc > 0;
+    $pane.toggleClass('incyc', inCyc);
+    
+    $pane.find('h1').text(xP(pi));
+    const $sl = $pane.find('.stat-list');
     $sl.empty();
-    addStat($sl, "Classes", sources[pi].length);
+    addStat($sl, "Classes", nSrc);
+    inCyc && addStat($sl, "In Cycles", nCyc); 
+};
+
+
+const fillPkgDetails = pi => {
+    updateStatsPane($detp, pi);
+};
+
+const updateSelPane = () => {
+    updateStatsPane($selp, sel.pi);
 };
 
 
@@ -488,6 +532,7 @@ const deselectPackage = () => {
     sel.pi = -1;
     clearSourceList();
     clearImportList();
+    $selp.hide();
 };
 
 const selectPackage = ($p, pi) => {
@@ -497,6 +542,8 @@ const selectPackage = ($p, pi) => {
     sel.$p = $p;
     sel.pi = pi;
     popSourceList(pi);
+    updateSelPane();
+    $selp.show();
 };
 
 const popPackageList = () => {
@@ -505,8 +552,10 @@ const popPackageList = () => {
         $item.attr('data-idx', pi);
         $item.hover(ev => packageHover($(ev.target).attr('data-idx')),
                     ev => clearHover());
-                    
+        // mark root packages
         codedRoots.includes(pi) && $item.addClass('root').attr('data-root', 1);
+        // mark packages that are found in cycles
+        pkgCycMap[pi] && $item.addClass('incyc');
                 
         $plist.append($item);
     }
@@ -617,7 +666,6 @@ def wr_title(hf):
 def wr_style(hf):
     hf.write('    <style>\n')
     hf.write(css_template)
-    hf.write(css_color_template)
     hf.write('    </style>\n')
 
 
