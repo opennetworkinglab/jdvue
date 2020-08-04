@@ -209,7 +209,6 @@ h2 {
 
 
 #container {
-    min-height: 600px;
     display: flex;
     padding: 4px;
 }
@@ -281,7 +280,6 @@ h2 {
 }
 #lists>div {
     min-width: 200px;
-    margin: 8px;
     padding: 8px;
     border: 1px dotted steelblue;
     background-color: white;
@@ -292,6 +290,12 @@ h2 {
     color: #c0d4d4;
 }
 
+#lists .content {
+    background-color: aliceblue;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
 .item {
     padding: 2px;
 }
@@ -300,7 +304,7 @@ h2 {
     color: white;
 }
 .item.selected {
-    background-color: #888;
+    background-color: #aaa;
     color: white;
     font-weight: bold;
 }
@@ -313,7 +317,7 @@ h2 {
     color: white;
 }
 .item.root.selected {
-    background-color: #bbe;
+    background-color: #99e;
     color: white;
 }
 
@@ -325,7 +329,7 @@ h2 {
     color: white;
 }
 .item.incyc.selected {
-    background-color: #fcc;
+    background-color: #faa;
     color: white;
 }
 
@@ -376,6 +380,8 @@ script_template = """
 /* Internal State */
 /* -------------- */
 
+const $cont = $('#container');
+const $sbar = $('#sidebar');
 const $sump = $('#summary-pane');
 const $selp = $('#select-pane');
 const $detp = $('#detail-pane');
@@ -663,8 +669,10 @@ $slist.click(ev => doSClick($(ev.target)));
 
 const doSClick = $s => {
     let si = $s.attr('data-idx');
-    sel.$s && deselectSource();
-    selectSource($s, si);
+    if (si !== undefined) {
+        sel.$s && deselectSource();
+        selectSource($s, si);
+    }
 };
 
 const deselectSource = () => {
@@ -714,8 +722,10 @@ const clearSourceList = () => {
 $ilist.click(ev => {
     let $tgt = $(ev.target);
     let ssi = $tgt.attr('data-dd');
-    console.log(`Clicked on import [${ssi}] ${xxFqSStr(ssi)}`);
-    navTo(ssi);
+    if (ssi !== undefined) {
+        console.log(`Clicked on import [${ssi}] ${xxFqSStr(ssi)}`);
+        navTo(ssi);
+    }
 });
 
 const popImportList = si => {
@@ -739,6 +749,19 @@ const clearImportList = () => {
     $ilist.empty();
 };
 
+const matchHeightToWindow = () => {
+    const vfudge = 16;
+    const v = $(window).height() - vfudge;
+    const lv = v - 20;
+    const ldv = lv - 20;
+    const ldcv = ldv - 24;
+    
+    $cont.height(v);
+    $sbar.height(lv);
+    $('#lists').height(lv);
+    $('#lists>div').height(ldv);
+    $('#lists .content').height(ldcv);
+};
 """
 
 version_template = f'const jdxVersion = "{jdx_version}";\n\n'
@@ -749,6 +772,8 @@ mainline_template = """
 /* ------------------------- */
 
 console.log('Now under New Management!');
+matchHeightToWindow();
+$(window).on('resize', matchHeightToWindow);
 
 logVersion();
 inflateData();
