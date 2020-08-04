@@ -196,7 +196,7 @@ body {
 h1 {
     font-size: 16px;
     font-weight: bold;
-    margin: 0;
+    margin: 0 0 8px 0;
     padding: 0;
 }
 
@@ -239,7 +239,7 @@ h2 {
     background-color: #ffffff;
     box-shadow: 2px 2px 4px 2px #777777;
     padding: 5px;
-    width: 220px;
+    width: 280px;
 }
 
 #sidebar .panel.hideable {
@@ -261,14 +261,18 @@ h2 {
     cursor: pointer;
 }
 
+.stat-spacer {
+    padding: 6px;
+}
 .stat-item {
     margin: 2px 6px;
     display: flex;
     justify-content: space-between;
 }
-.stat-label {
-}
-.stat-value {
+.stat-item-lj {
+    margin: 2px 6px;
+    display: flex;
+    justify-content: flex-start;
 }
 
 #lists {
@@ -435,10 +439,13 @@ const clickable = $d => $d.addClass('clickable');
 
 /* --- SIDEBAR panels --- */
 
-const addStat = ($div, lab, val) => {
+const addSpacer = $div => $div.append(div('stat-spacer'));
+
+const addStat = ($div, lab, val, lj) => {
     const $l = div('stat-label').html(lab);
     const $v = div('stat-value').html(val);
-    const $si = div('stat-item').append($l).append($v);
+    const cls = lj ? 'stat-item-lj' : 'stat-item';
+    const $si = div(cls).append($l).append($v);
     $div.append($si);
 }
 
@@ -458,7 +465,13 @@ const getDeps = (pi, pCyc) => {
 
 const popCycLinks = ($sl, pi, pCyc) => {
   getDeps(pi, pCyc).forEach(k => {
-    addStat($sl, '&rarr;', insSpaces(xP(k)));
+    addStat($sl, '&rarr;', insSpaces(xP(k)), 1);
+  });
+};
+    
+const popImpCycLinks = ($sl, cycImps) => {
+  cycImps.forEach(dd => {
+    addStat($sl, '&rarr;', insSpaces(xxFqSStr(dd)), 1);
   });
 };
     
@@ -473,7 +486,7 @@ const popSummary = () => {
 
 $sump.click(ev => deselectPackage());
 
-const updateStatsPane = ($pane, pi) => {
+const updatePkgStats = ($pane, pi) => {
     let nSrc = sources[pi].length;
     
     let isRoot = codedRoots.includes(parseInt(pi, 10));
@@ -489,16 +502,46 @@ const updateStatsPane = ($pane, pi) => {
     $sl.empty();
     isRoot && addStat($sl, "Root", "(no dependencies)");
     addStat($sl, "Classes", nSrc);
-    inCyc && addStat($sl, "In Cycles", nCyc); 
-    inCyc && popCycLinks($sl, pi, pCyc);
+    if (inCyc) {
+      addSpacer($sl);
+      addStat($sl, "Cycle Count", nCyc); 
+      popCycLinks($sl, pi, pCyc);
+    }
 };
 
 const fillPkgDetails = pi => {
-    updateStatsPane($detp, pi);
+    updatePkgStats($detp, pi);
 };
 
-const updateSelPane = () => {
-    updateStatsPane($selp, sel.pi);
+const updateSrcStats = ($pane, si) => {
+    let fq = mkFqsi(si);
+    let deps = srcDepMap[fq] || [];
+    let ddps = pkgsFromFqsiList(deps);
+    let cycps = pkgsInCycs(ddps);
+    let imps = [];
+    let cycImps = [];
+    
+    deps.forEach(dd => {
+        imps.push(dd);
+        let [p, s] = dd.split('.');
+        cycps.includes(p) && cycImps.push(dd);
+    });
+    let inCyc = cycImps.length > 0;
+    
+    $pane.toggleClass('incyc', inCyc);
+    $pane.find('h1').text(xxS(fq));
+    const $sl = $pane.find('.stat-list');
+    $sl.empty();
+    addStat($sl, "Imports", imps.length);
+    if (inCyc) {
+      addSpacer($sl);
+      addStat($sl, "Cycle Count", cycImps.length); 
+      popImpCycLinks($sl, cycImps);
+    }
+};
+
+const fillSrcDetails = $s => {
+    updateSrcStats($detp, $s.attr('data-idx'));
 };
 
 
@@ -551,6 +594,11 @@ const packageHover = pi => {
     $detp.show();
 };
 
+const sourceHover = $s => {
+    fillSrcDetails($s);
+    $detp.show();
+};
+
 const clearHover = () => {
     $detp.hide();
 };
@@ -582,7 +630,7 @@ const selectPackage = ($p, pi) => {
     sel.$p = $p;
     sel.pi = pi;
     popSourceList(pi);
-    updateSelPane();
+    updatePkgStats($selp, sel.pi);
     $selp.show();
 };
 
@@ -647,6 +695,9 @@ const popSourceList = pi => {
         $item.attr('data-depc', cycps);
         $item.toggleClass('incyc', inCyc);
         
+        $item.hover(ev => sourceHover($(ev.target)),
+                    ev => clearHover());
+
         $slist.append($item);
     }
 };
